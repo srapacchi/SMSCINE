@@ -1,7 +1,12 @@
 function K = SMS_CAIPIshift(K,CAIPIshifts,RFphases)
 % assumes K is 3D: kx ky coil slice
+% CAIPIshifts is a 1D vector of length Nslices (=size(K,4))
+% RFphases (optional) is the same dimension as CAIPIshifts (not sure if needed)
 %
-% Shift according to CAIPI shifts
+% Shift image space corresponding to K according to CAIPI shifts
+%
+% Stan Rapacchi
+
 if(~exist('RFphases','var'))
 	RFphases = 0*CAIPIshifts;
 end

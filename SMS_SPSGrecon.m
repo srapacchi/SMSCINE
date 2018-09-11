@@ -1,14 +1,11 @@
-function Kb = SMS_SPSGrecon(Kmb,ws,dovcc)
+function Kb = SMS_SPSGrecon(Kmb,ws)
 % Kmb should be ky kx nc
 % ws is the SPSG kernel: nky nkx nc nc
+%
+% Performs split-slice GRAPPA reconstruction
 
-if(~exist('dovcc','var') || isempty(dovcc) )
-    dovcc = 0;
-end
 
-if(dovcc)
-    Kmb = cat(3,Kmb,vcc2D(Kmb));
-end
+
 
 Kb = 0*Kmb;
 Ksz = size(Kmb);
@@ -31,8 +28,4 @@ else
         end
         Kb(:,:,c)=sum(tmpres,3);
     end
-end
-
-if(dovcc)
-    Kb = Kb(:,:,1:nc/2);
 end

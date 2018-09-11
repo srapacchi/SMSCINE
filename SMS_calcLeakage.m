@@ -1,6 +1,6 @@
 function [avgleak,leakage,mask,MAG] = SMS_calcLeakage(ims)
 
-% function to extract leakage fom GT_2DMB_TGRAPPA_leakage
+% function to extract leakage from GT_2DMB_TGRAPPA_leakage
 
 IMsz= size(ims);
 
@@ -27,6 +27,7 @@ for slc=1:Nslices
     %leakage(:,:,slc)=abs(sum(temp,5))./abs(sum(ims(:,:,slc,slc,:),5));
 end
 
+% masking for auto measures
 mask = MAG>median(MAG(:));
 
 avgleak = zeros(Nslices,1);

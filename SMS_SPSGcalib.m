@@ -1,15 +1,14 @@
-function ws = SMS_SPSGcalib(kdataCal,ksize,lambda,dovcc)
+function ws = SMS_SPSGcalib(kdataCal,ksize,lambda)
+% Inputs:
+%   kdataCal should be ky kx nc mb
+%   ksize is the kernels size
+%   lambda is the Tykonov regularization (optional)
 %
-% kdataCal should be ky kx nc mb
+% Output: 
+%   ws are the SplitSliceGRAPPA (SPSG) kernels
 %
-if(~exist('dovcc','var') || isempty(dovcc) )
-    dovcc = 0;
-end
-
-if(dovcc)
-    kdataCal = cat(3,kdataCal,vcc2D(kdataCal));
-end
-
+% Performs SPSG calibration
+% 
 
 if(~exist('ksize','var') || isempty(ksize) )
     srcx = 3;                         % should be odd
@@ -41,7 +40,8 @@ for slcInd = 1:mb
     end
 end
 
-%pinv reg
+% pseudo matrix inversion
+% pinv reg
 A=src';
 AA = A'*A;
 S = svd(AA,0);
