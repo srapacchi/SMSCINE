@@ -2,15 +2,14 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
     
     properties
         
-        image_num = 0;
-        series_num = 0;
-        ksp_size;
-        dosave = 0;
-        domapT = 0;
+        image_num = 0; %obsolete
+        series_num = 0; %obsolete
+        ksp_size;	%kspace size
+        dosave = 0; %to save data at intermediate points in the code for debugging
 		
 		NiterSLCgpa = 1;
-		kszSLCgpa = [7 5];%[5 4];
-		lambdaSLCgpa = 1e-4;%6e-5;%1e-5;
+		kszSLCgpa = [7 5];% SSG kernel size, second number can be odd or even
+		lambdaSLCgpa = 1e-5; %Tikhonov SSG regularization
 		CalibSz = [32 24];
         time = 1;
     end
