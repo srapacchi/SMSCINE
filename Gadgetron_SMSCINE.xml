@@ -4,15 +4,13 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!--
-        Gadgetron generic recon chain for 2D and 3D cartesian sampling
+        Gadgetron  chain for 2D SMS-CINE with self-calibration (Fourier encoding)
 
-        Triggered by repetition
-        Recon N is contrast and S is set
 
-        Author: Hui Xue
+        Author: Stan Rapacchi
         Magnetic Resonance Technology Program, National Heart, Lung and Blood Institute, National Institutes of Health
         10 Center Drive, Bethesda, MD 20814, USA
-        Email: hui.xue@nih.gov
+        Email: stanislas.rapacchi(at)univ-amu.fr
     -->
 
     <!-- reader -->
@@ -69,7 +67,8 @@
         <property><name>prepare_ref_always</name><value>true</value></property>
     </gadget>
 
-    <!-- Coil compression -->
+    <!-- Coil compression
+   Note that coil compression is NOT compatible with SMS unless calibration is embedded!!! -->
     <gadget>
         <name>CoilCompression</name>
         <dll>gadgetron_mricore</dll>
@@ -87,22 +86,24 @@
         <property><name>upstream_coil_compression_num_modesKept</name><value>0</value></property>
     </gadget>
 
+    <!-- Current SMS gadget prototyped in Matlab -->
     <gadget>
       <name>SMSMatlabreconstruction</name>
       <dll>gadgetron_matlab</dll>
       <classname>MatlabBufferGadget</classname>
       <property><name>matlab_path</name><value>~/Documents/MATLAB/stan/Cartesian2D</value></property>
-      <property><name>matlab_classname</name><value>GT_2DMB_TGRAPPA_leakage</value></property>
+      <!-- change to GT_2DMB_TGRAPPA_leakage for leakage measures -->
+      <property><name>matlab_classname</name><value>GT_2DMB_TGRAPPA</value></property>
       <property><name>debug_mode</name><value>true</value></property>
       <property><name>pass_on_undesired_data</name><value>true</value></property>
     </gadget>
 
-    <!-- Recon -->
+    <!-- Recon : comment/uncomment gadgets to change recon-->
      <gadget>
         <name>Recon</name>
         <dll>gadgetron_mricore</dll>
         <classname>GenericReconCartesianGrappaGadget</classname>
-        
+
         <property><name>image_series</name><value>0</value></property>
 
         <property><name>coil_map_algorithm</name><value>Inati_Iter</value></property>
@@ -119,27 +120,6 @@
         <property><name>send_out_snr_map</name><value>false</value></property>
     </gadget>
 
-       <!-- parameters for SPIRIT recon -->
-
-        <!--    <gadget>
-        <name>Recon</name>
-        <dll>gadgetron_mricore</dll>
-        <classname>GenericReconCartesianSpiritGadget</classname>
-
-        <property><name>image_series</name><value>0</value></property>
-
-        <property><name>coil_map_algorithm</name><value>Inati_Iter</value></property>
-
-        <property><name>spirit_print_iter</name><value>true</value></property>
-        <property><name>spirit_reg_lamda</name><value>0.02</value></property>
-        <property><name>spirit_iter_max</name><value>50</value></property>
-        <property><name>spirit_calib_over_determine_ratio</name><value>45</value></property>
-        <property><name>spirit_iter_thres</name><value>0.0010</value></property>
-        
-        <property><name>debug_folder</name><value></value></property>
-        <property><name>perform_timing</name><value>true</value></property>
-        <property><name>verbose</name><value>true</value></property>
-    </gadget> -->
 
     <!-- <gadget>
          <name>Recon</name>
@@ -167,9 +147,9 @@
         <property><name>debug_folder</name><value></value></property>
         <property><name>perform_timing</name><value>true</value></property>
         <property><name>verbose</name><value>true</value></property>
-		
-    </gadget> 
- -->
+
+    </gadget>
+    -->
     <!-- Partial fourier handling -->
 <!--     <gadget>
         <name>PartialFourierHandling</name>
@@ -269,12 +249,12 @@
         <classname>ImageArraySplitGadget</classname>
     </gadget>
 
-   
-		 
+
+
 		<!-- Physio interpolation -->
         <!-- mode 0=seperate series for each complete RR -->
         <!-- 1=First complete RR interval only -->
-                <!--interp_method "Spline" or "BSpline" 
+                <!--interp_method "Spline" or "BSpline"
     <gadget>
         <name>PhysioInterpolation</name>
         <dll>gadgetron_mricore</dll>
@@ -285,7 +265,7 @@
             <value>30</value>
         </property>
 
-     
+
         <property>
             <name>mode</name>
             <value>1</value>
@@ -309,29 +289,27 @@
         <dll>gadgetron_mricore</dll>
         <classname>ComplexToFloatGadget</classname>
     </gadget>
-	
+
 	<!-- 9 for mag and phase -->
 <!-- 	 <gadget>
       <name>Extract</name>
       <dll>gadgetron_mricore</dll>
       <classname>ExtractGadget</classname>
-      <property><name>extract_mask</name><value>1</value></property> 
+      <property><name>extract_mask</name><value>1</value></property>
     </gadget> -->
 
-  
-	
-	
+
     <gadget>
         <name>FloatToShortAttrib</name>
         <dll>gadgetron_mricore</dll>
         <classname>FloatToUShortGadget</classname>
-<!-- 
+<!--
         <property><name>max_intensity</name><value>32767</value></property>
         <property><name>min_intensity</name><value>0</value></property>
         <property><name>intensity_offset</name><value>0</value></property> -->
-    </gadget> 
+    </gadget>
 
-   
+
     <gadget>
         <name>ImageFinish</name>
         <dll>gadgetron_mricore</dll>

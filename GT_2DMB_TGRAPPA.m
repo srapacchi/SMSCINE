@@ -1,37 +1,37 @@
 classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
-    
+
     properties
-        
+
         image_num = 0; %obsolete
         series_num = 0; %obsolete
         ksp_size;	%kspace size
         dosave = 0; %to save data at intermediate points in the code for debugging
-		
+
 		NiterSLCgpa = 1;
 		kszSLCgpa = [7 5];% SSG kernel size, second number can be odd or even
 		lambdaSLCgpa = 1e-5; %Tikhonov SSG regularization
 		CalibSz = [32 24];
         time = 1;
     end
-    
+
     methods
 
         %=========================
         %
         % Config
-        %=========================        
+        %=========================
         function g = config(g)
-            
+
             fprintf('The resonance frequency is %d\n', g.xml.experimentalConditions.H1resonanceFrequency_Hz);
 %             try % this is the only cast from java.lang.Integer that works in Matlab
 %                 nc = g.xml.acquisitionSystemInformation.receiverChannels;
 %             catch
 %                 nc = 1;
 %             end
-           
+
             g.image_num = 1;   % todo this needs to be static or global...
             g.series_num = 1;  % todo this needs to be static or global...
-            
+
             % base resolution (final image matrix)
 %             nx = g.xml.encoding.encodedSpace.matrixSize.x;
 %             ny = g.xml.encoding.encodedSpace.matrixSize.y;
@@ -42,9 +42,9 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
                   ,'/Documents/MATLAB/ESPIRiT/utils'...
                   ,'/Documents/MATLAB/ESPIRiT/coilCompression_code'...
                   ,'/Documents/MATLAB/ESPIRiT/SPIRiT_code');
-            
+
         end
-        
+
         %=========================
         %
         % Process
@@ -56,14 +56,14 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
             imgbuffer =struct(recon_data.data);
 	        disp([' Size of buffer :' num2str(size(imgbuffer.data))]);
 			refbuffer = struct(recon_data.reference);
-	            
+
 	            % store headers
 			refheaders = refbuffer.headers;
             imgheaders = imgbuffer.headers;
 
 
-            
-            
+
+
 			Na= size(imgbuffer.data,5);
             Nb= size(imgbuffer.data,6);
 
@@ -80,7 +80,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 	                gxml = g.xml;
 	                save(strcat(targetPath,nowstring,'_data'),'gxml','recon_data','-v7.3');
 	            end
-	            
+
 	            CAIPIshifts = 2*pi*(0:(Nslices-1))/Nslices;
 
 	            % let's start by removing incomplete phases
@@ -123,10 +123,10 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 
 		   		[FirstKy, InitKy, LastKy, FirstKx, LastKx] = FindKspaceBoundaries(imgbuffer.data,g.xml);
 		        Nky = length(InitKy:GPfact:LastKy);
-	    		Nkx = g.xml.encoding.encodedSpace.matrixSize.x;	
-	            
+	    		Nkx = g.xml.encoding.encodedSpace.matrixSize.x;
+
 				fprintf(1,'Reduced FOV: InitKy=%d - grappa%d - LastKy=%d\n',InitKy, GPfact,LastKy);
-					           
+
 	            % Now use time-grappa for isolating the N slices (using the N first phase for now)
 
 	            %use 7th dimension for slices
@@ -137,12 +137,12 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 	            imgbuffer =struct(recon_data.data);
 		        disp([' Size of buffer :' num2str(size(imgbuffer.data))]);
 				refbuffer = struct(recon_data.reference);
-		            
+
 		            % store headers
 				refheaders = refbuffer.headers;
 	            imgheaders = imgbuffer.headers;
 
-	            
+
 	%          % For some reason, partial Fourier is poorly handled, don't have time to investigate why
 	%          kszxml = g.xml.encoding.encodedSpace.matrixSize.y;
 	%          dky = kszxml-(LastKy-1)-FirstKy;
@@ -164,7 +164,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 		            		Ktemp = 0*Ktemp; %init
 		            		for ref=1:Nref
 
-		            			iphase =(ref-1)*Nslices+s2; 
+		            			iphase =(ref-1)*Nslices+s2;
 			            		for s3=iphase:iphase-1+Nslices % phase dimension
 			            			fprintf(1,'s=%d /%d- ref=%d / %d- s3=%d /%d\n',s,Nslices, ref,Nref,s3,Nphase);
 						            Ktemp(:,:,:,:,ref) = Ktemp(:,:,:,:,ref) + recon_data.data.data(:,:,:,:,s3,b) * exp(1i*2*pi*(s3-1)*(s-1)/Nslices);
@@ -179,12 +179,12 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 					        kcalib(:,:,:,:,s,s2)=reshape(U(:,1),Ktsz(1:4));
 				    	end
 				    end
-				  
+
 
 				    % kernels = SMS_SPSGcalib(permute(kcalib(FirstKx:LastKx , InitKy:GPfact:LastKy ,:,:,:),[2 1 3 4 5]),g.kszSLCgpa,g.lambdaSLCgpa);
 				    startKy = 1+rem(InitKy-1,Nslices);
 				    kernels = SMS_SPSGcalib(permute(mycrop(squeeze(kcalib( : , startKy:GPfact:end ,:,:,:,1)),g.CalibSz,'c'),[2 1 3 4 5]),g.kszSLCgpa,g.lambdaSLCgpa);
-				    
+
 				    kernels = repmat(kernels,[1 1 1 1 1 Nslices]);
 				    for s2 = 2:Nslices
 				    	kernels(:,:,:,:,:,s2) = SMS_SPSGcalib(permute(mycrop(squeeze(kcalib( : , startKy:GPfact:end ,:,:,:,s2)),g.CalibSz,'c'),[2 1 3 4 5]),g.kszSLCgpa,g.lambdaSLCgpa);
@@ -196,7 +196,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 							for iter=1:g.NiterSLCgpa
 		                       imgkspace(FirstKx:LastKx,InitKy:GPfact:LastKy,:,:,ph,b,slc)=...
 			                       	 exp(1i*2*pi*(ph-1)*(slc-1)/Nslices)* permute(SMS_SPSGrecon(permute(squeeze(imgkspace(FirstKx:LastKx,InitKy:GPfact:LastKy,:,:,ph,b,slc)),[2 1 3 4])...
-			                        , kernels(:,:,:,:,slc,rem(ph-1,Nslices)+1) ),[2 1 3 4]); 
+			                        , kernels(:,:,:,:,slc,rem(ph-1,Nslices)+1) ),[2 1 3 4]);
 		                    end
 		                    %undo CAIPI shift
 		                    imgkspace(:,:,:,:,ph,b,slc) = SMS_CAIPIshift(squeeze(imgkspace(:,:,:,:,ph,b,slc)),CAIPIshifts(slc));
@@ -217,7 +217,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 					        % end
 					        % kcalib(:,:,:,:,s)=Ktemp;
 					        for ref=1:Nref
-		            			iphase =(ref-1)*Nslices+s2; 
+		            			iphase =(ref-1)*Nslices+s2;
 			            		for s3=iphase:iphase-1+Nslices % phase dimension
 			            			% fprintf(1,'SSSR REF s=%d /%d- ref=%d /%d- s2=%d /%d\n',s,Nslices, ref,Nref,s2,Nphase);
 			            			% disp([' Size of buffer :' num2str(size(Ktemp(:,:,:,:,ref)))]);
@@ -233,7 +233,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 					        [U,~,~] = svd(reshape(Ktemp,[prod(Ktsz(1:4)) size(Ktemp,5)]),'econ');
 					        kcalib(:,:,:,:,s,s2)=reshape(U(:,1),Ktsz(1:4));
 				    	end
-				        
+
 				    end
 
 				    if(g.dosave==2)
@@ -262,7 +262,7 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 							for iter=1:g.NiterSLCgpa
 		                       refkspace(FirstKx:LastKx,:,:,:,ph,b,slc)=...
 			                       	 exp(1i*2*pi*(ph-1)*(slc-1)/Nslices)* permute(SMS_SPSGrecon(permute(squeeze(refkspace(FirstKx:LastKx,:,:,:,ph,b,slc)),[2 1 3 4])...
-			                        , kernels(:,:,:,:,slc,rem(ph-1,Nslices)+1) ),[2 1 3 4]); 
+			                        , kernels(:,:,:,:,slc,rem(ph-1,Nslices)+1) ),[2 1 3 4]);
 		                    end
 
 		                    %undo CAIPI shift
@@ -274,20 +274,20 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 
 
 				for slc=1:Nslices
-						                
+
 
 	                %if(slc==1)
 	                % modify buffer: change slice number
 	                acqtime=imgheaders.acquisition_time_stamp;
             		selected = acqtime>0;
 					imgbuffer.headers.idx.slice(logical(selected)) = uint16(slc-1);
-            		% remove CINE oversampling ky lines 
+            		% remove CINE oversampling ky lines
             		% oskylines =  imgheaders.idx.kspace_encode_step_1<LastKy;
             		% fprintf('size selected %d oskylines %d \n',size(selected),size(oskylines));
             		% selected = selected.*oskylines;
 
 
-	               
+
 	                % imgbuffer.headers.position(:,1:Nhdrs)=repmat(refslcpos,[1 Nhdrs]);
 	                % TO DO: change slice position!
 	                SliceThick = g.xml.encoding.reconSpace.fieldOfView_mm.z; %mm
@@ -301,13 +301,13 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 	                Ksz = size(imgbuffer.data);
             		NhdrsNecessary = prod(Ksz(2:end))/Ksz(4);
 	                imgbuffer.headers = imgbuffer.headers.select(1:NhdrsNecessary);
-	                
+
 
 
 	                acqtime=refbuffer.headers.acquisition_time_stamp;
             		selected = acqtime>0;
 	                refbuffer.headers.idx.slice(logical(selected)) = uint16(slc-1);
-	               
+
 	                % TO DO: change slice position!
 	                SliceThick = g.xml.encoding.reconSpace.fieldOfView_mm.z; %mm
 	                SliceDir = refbuffer.headers.slice_dir;
@@ -323,22 +323,22 @@ classdef GT_2DMB_TGRAPPA < handle & BaseBufferGadget
 					%end
 	            end % end of slice loop
 
-	          
+
 	            if(g.time)
 	                fprintf(1,'Slice-GRAPPA time %g\n',toc);
-	            end        
+	            end
 
 	        else %single slice (noMB)
-	
+
 	        	% pass on data as they are (no processing)
 	        	putBufferQ(g,recon_data.data,recon_data.reference);
 	        end
 
 
             disp('--- Sending data is done ---');
-        
+
         end %end of process
-        
+
     end %end of methods
 end %end of classdef
 
@@ -351,7 +351,7 @@ function [FirstKy, InitKy, LastKy, FirstKx, LastKx] = FindKspaceBoundaries(imgks
     Ky1=sum(sum(abs(imgkspace(:,:,:,:)),4),2);
     FirstKx=find(Ky1,1,'first');
     LastKx=find(Ky1,1,'last');
-    
+
     %InitKy = rem(FirstKy,GPfact);
     %if(InitKy==0)
     %    InitKy=GPfact;
@@ -360,7 +360,7 @@ function [FirstKy, InitKy, LastKy, FirstKx, LastKx] = FindKspaceBoundaries(imgks
     LastKy = 1+floor(gxml.encoding.encodedSpace.matrixSize.y/2) ...
         -gxml.encoding.encodingLimits.kspace_encoding_step_1.center...
         +gxml.encoding.encodingLimits.kspace_encoding_step_1.maximum;
-	
+
 	LastKy = min(size(imgkspace,2),LastKy);
 
 end
